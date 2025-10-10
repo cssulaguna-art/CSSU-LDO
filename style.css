@@ -1,0 +1,32 @@
+    :root{--bg:#f5f6fa;--card:#fff;--accent:#40739e;--danger:#c0392b}
+    *{box-sizing:border-box;font-family:Inter, Poppins, system-ui, Arial}
+    body{margin:0;background:var(--bg);}
+  .sidebar{position:fixed;left:0;top:0;height:100%;width:260px;background:#2f3640;color:#fff;padding:28px 20px;border-right:1px solid rgba(255,255,255,0.03)}
+  .sidebar h2{margin:0 0 22px;font-size:28px;line-height:1;font-weight:800;letter-spacing:0.4px;color:#ffffff}
+  .sidebar .nav{list-style:none;padding:0;margin:8px 0 0}
+  .sidebar .nav li{margin:8px 0}
+  .sidebar .nav a{display:flex;align-items:center;gap:12px;color:#e9f0f4;text-decoration:none;padding:10px 10px;border-radius:10px}
+  .sidebar .nav a .nav-icon{font-size:20px;line-height:1}
+  .sidebar .nav a span{display:inline-block}
+  .sidebar .nav a:hover{background:rgba(255,255,255,0.03)}
+  .sidebar .nav a.active{background:linear-gradient(90deg,rgba(255,255,255,0.04),rgba(255,255,255,0.02));box-shadow:inset 3px 0 0 rgba(255,255,255,0.06)}
+  .page{margin-left:260px;padding:24px}
+    .card{background:var(--card);padding:16px;border-radius:10px;box-shadow:0 6px 18px rgba(0,0,0,0.06)}
+    .upload-row{display:flex;gap:8px;align-items:center}
+    .upload-row input[type=text]{flex:1;padding:8px;border:1px solid #e6e9ee;border-radius:8px}
+    .upload-row select{padding:8px;border-radius:8px;border:1px solid #e6e9ee}
+    .upload-row input[type=file]{padding:6px}
+    .btn{padding:8px 12px;border-radius:8px;border:none;background:var(--accent);color:#fff;cursor:pointer}
+  /* table-based layout - previous group/card styles removed */
+    .c-EHAP{background:linear-gradient(90deg,#40739e,#2f6f93)}
+    .c-EPHAP{background:linear-gradient(90deg,#6a1b9a,#8e24aa)}
+    .c-888{background:linear-gradient(90deg,#34495e,#2c3e50)}
+    .c-FOI{background:linear-gradient(90deg,#16a085,#1abc9c)}
+    .c-CBTAP{background:linear-gradient(90deg,#d35400,#e67e22)}
+    .c-CONDONATION{background:linear-gradient(90deg,#c0392b,#e74c3c)}
+    .c-GAD{background:linear-gradient(90deg,#2ecc71,#27ae60)}
+    .c-COHSEP{background:linear-gradient(90deg,#f39c12,#f1c40f)}
+    .modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center}
+    .modal[open]{display:flex}
+    .modal .card{max-width:720px;width:100%}
+    @media (max-width:700px){.page{margin-left:0;padding:12px}.upload-row{flex-direction:column;align-items:stretch}}
