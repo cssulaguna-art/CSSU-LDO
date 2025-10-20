@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  
+  <title>HOA Registry</title>
+  <style>
+    :root{--bg:#f5f6fa;--card:#fff;--accent:#40739e;--danger:#c0392b}
+    body{font-family:Poppins, Arial, sans-serif;margin:0;background:var(--bg);color:#222}
+    .wrap{max-width:1100px;margin:28px auto;padding:0 16px}
+    h1{color:var(--accent);margin-bottom:8px}
+    .card{background:var(--card);padding:14px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.06)}
+    .controls{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;align-items:center}
+    .controls input,.controls select{padding:8px;border:1px solid #e6e9ee;border-radius:6px}
+    .btn{background:var(--accent);color:#fff;border:0;padding:8px 10px;border-radius:6px;cursor:pointer}
+    .btn.secondary{background:#95a5a6}
+  .btn.edit{background:#2e86de}
+  .btn.view{background:#27ae60}
+  /* make the Apply filter button green specifically */
+  #applyFilter{background:#27ae60;color:#fff;border:0}
+  #applyFilter:hover{filter:brightness(0.95)}
+    table{width:100%;border-collapse:collapse;font-size:14px}
+    thead th{background:#f1f5f9;padding:8px;border-bottom:1px solid #e6e9ee;text-align:left}
+    tbody td{padding:8px;border-bottom:1px solid #f3f6f8;vertical-align:top}
+    .empty{color:#777;text-align:center;padding:12px}
+  /* expiration highlighting - higher contrast red */
+  tr.expired{background:rgba(231,76,60,0.10);border-left:4px solid var(--danger)}
+  /* expiration cell should not be colored separately; whole row becomes red when expired */
+  td.expire-cell{font-weight:700;color:inherit}
+  .btn.danger{background:#b71c1c;color:#fff}
+  .btn.danger:hover{filter:brightness(0.92)}
+
+  /* hover states */
+  tbody tr{transition:transform 180ms ease, box-shadow 180ms ease, background-color 180ms}
+  tbody tr:hover{transform:translateY(-3px);box-shadow:0 6px 14px rgba(16,24,40,0.06)}
+
+  /* actions with icons */
+  .action-btn{display:inline-flex;align-items:center;gap:8px;padding:6px 8px;border-radius:6px;border:none;cursor:pointer}
+  .action-btn svg{width:14px;height:14px;display:inline-block}
+
+  /* newly expired animation */
+  @keyframes newExpiredPulse{0%{background:rgba(231,76,60,0.14)}50%{background:rgba(231,76,60,0.06)}100%{background:rgba(231,76,60,0.12)}}
+  tr.new-expired{animation:newExpiredPulse 2.2s ease-in-out 1}
+
+  /* pagination controls */
+  .pager{display:flex;gap:8px;align-items:center;justify-content:flex-end;margin-top:10px}
+  .pager .page-btn{padding:6px 10px;border-radius:6px;border:1px solid #e6e9ee;background:#fff;cursor:pointer}
+  .pager .page-btn[disabled]{opacity:0.45;cursor:not-allowed}
+
+  /* small responsive tweaks */
+  @media(max-width:700px){ thead th:nth-child(4), thead th:nth-child(5), thead th:nth-child(6){display:none} tbody td:nth-child(4), tbody td:nth-child(5), tbody td:nth-child(6){display:none} .controls{flex-direction:column;align-items:stretch} }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px">
+      <h1 style="margin:0">Homeowners Association </h1>
+      <div>
+        <a href="index.html" class="btn secondary" title="Back to dashboard">◀ Back</a>
+      </div>
+    </div>
+    <div class="card">
+      <p style="color:#444;margin-bottom:8px">Add HOA members below. Expired registrations are highlighted in red.</p>
+      <div class="controls">
+        <div style="display:flex;gap:8px;flex:1;align-items:center;flex-wrap:wrap">
+          <button id="openAddModal" class="btn">
+            <svg viewBox="0 0 24 24" width="14" height="14" style="vertical-align:middle;fill:#fff;margin-right:8px;flex:0 0 auto" xmlns="http://www.w3.org/2000/svg"><path d="M11 11V5h2v6h6v2h-6v6h-2v-6H5v-2h6z"/></svg>
+            <span style="vertical-align:middle">Add Member</span>
+          </button>
+          <input id="globalSearch" placeholder="Search..." style="padding:8px;border:1px solid #e6e9ee;border-radius:6px;min-width:120px" />
+      <select id="filterLocation" style="padding:8px;border:1px solid #e6e9ee;border-radius:6px">
+        <option value="">All</option>
+            <option>SAN PEDRO</option>
+            <option>BIÑAN</option>
+            <option>STA ROSA</option>
+            <option>CABUYAO</option>
+            <option>CALAMBA</option>
+            <option>BAY</option>
+            <option>CALAUAN</option>
+            <option>SAN PABLO</option>
+          </select>
+          <label style="font-size:13px;color:#555">Registered from</label>
+          <input id="filterFrom" type="date" />
+          <label style="font-size:13px;color:#555">to</label>
+          <input id="filterTo" type="date" />
+          <button id="applyFilter" class="btn btn-success">Apply</button>
+          <button id="clearFilter" class="btn" style="background:#7f8c8d">Clear</button>
+          <button id="exportHoacsv" class="btn" style="background:#2ecc71">Export CSV</button>
+          <button id="exportHoapdf" class="btn" style="background:#e74c3c">Export PDF</button>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <label style="font-size:13px;color:#555">Per page</label>
+          <select id="pageSizeSelect">
+            <option>5</option>
+            <option selected>10</option>
+            <option>20</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="overflow:auto">
+        <table id="hoaTable">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Full Name</th>
+              <th>Sex</th>
+              <th>Designation</th>
+              <th>Location</th>
+              <th>Date Registered</th>
+              <th>Expiration</th>
+              <th style="text-align:center">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="hoaTbody">
+            <tr class="empty-row"><td class="empty" colspan="8">No homeowners yet</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="pager" id="pager" style="display:none">
+        <div style="margin-right:auto;color:#555" id="pagerInfo"></div>
+        <button id="prevPage" class="page-btn">◀ Prev</button>
+        <div id="pageNumbers" style="display:flex;gap:6px"></div>
+        <button id="nextPage" class="page-btn">Next ▶</button>
+      </div>
+      
+      <!-- Recent History removed from here and moved to a separate section below -->
+    </div>
+  </div>
+
+  <!-- Modal for Add / View / Edit -->
+  <!-- Separate Recent History card -->
+  <div class="wrap" style="margin-top:12px">
+    <div class="card">
+      <h3 style="margin:0 0 8px 0;color:var(--accent)">Recent History</h3>
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
+        <label style="font-size:13px;color:#555">From</label>
+        <input id="hoaHistoryFrom" type="date" style="padding:6px;border:1px solid #e6e9ee;border-radius:6px" />
+        <label style="font-size:13px;color:#555">To</label>
+        <input id="hoaHistoryTo" type="date" style="padding:6px;border:1px solid #e6e9ee;border-radius:6px" />
+        <select id="hoaHistoryUser" style="padding:6px;border-radius:6px;border:1px solid #e6e9ee"><option value="">All</option></select>
+        <input id="hoaHistorySearch" placeholder="Search history" style="padding:6px;border-radius:6px;border:1px solid #e6e9ee;min-width:160px" />
+        <button id="hoaExportPdf" class="btn" style="background:#e74c3c">Export PDF</button>
+        <button id="hoaExportCsv" class="btn" style="background:#2ecc71">Export Excel</button>
+      </div>
+      <div style="max-height:220px;overflow:auto;border:1px solid #eef3f6;padding:8px;border-radius:6px;background:#fbfdff">
+        <ul id="hoaHistoryList" style="list-style:none;padding-left:0;margin:0;display:flex;flex-direction:column;gap:6px"></ul>
+      </div>
+    </div>
+  </div>
+  <div id="hoaModal" class="modal" aria-hidden="true" style="display:none">
+    <div class="modal-backdrop" id="hoaModalBackdrop" style="position:fixed;inset:0;background:rgba(0,0,0,0.35);"></div>
+    <div class="card" role="dialog" aria-modal="true" style="position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:680px;max-width:96%;z-index:1000">
+      <h3 id="modalTitle">Add Member</h3>
+  <div style="display:flex;flex-wrap:wrap;gap:15px;margin-bottom:10px">
+  <input id="trackingNumber" placeholder="Tracking #" style="padding:8px;border:1px solid #e6e9ee;border-radius:6px;min-width:160px" readonly />
+  <input id="fullName" placeholder="Full name" style="flex:2;padding:8px;border:1px solid #e6e9ee;border-radius:6px" />
+        <select id="sex" style="padding:8px;border:1px solid #e6e9ee;border-radius:6px"><option value="">Sex</option><option>Male</option><option>Female</option></select>
+        <input id="designation" placeholder="Designation" style="padding:8px;border:1px solid #e6e9ee;border-radius:6px" />
+        <select id="location" style="padding:8px;border:1px solid #e6e9ee;border-radius:6px">
+          <option value="">Location</option>
+          <option>SAN PEDRO</option>
+          <option>BIÑAN</option>
+          <option>STA ROSA</option>
+          <option>CABUYAO</option>
+          <option>CALAMBA</option>
+          <option>BAY</option>
+          <option>CALAUAN</option>
+          <option>SAN PABLO</option>
+        </select>
+        <input id="dateRegistered" type="date" style="padding:8px;border:1px solid #e6e9ee;border-radius:6px" />
+        <input id="expiration" type="date" style="padding:8px;border:1px solid #e6e9ee;border-radius:6px" />
+      </div>
+      <div style="display:flex;justify-content:flex-end;gap:8px">
+        <button id="modalCancel" class="btn secondary">Cancel</button>
+        <button id="modalSave" class="btn">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function(){
+      const KEY = 'hoa_registry_v1';
+      const EXPIRED_KEYS = 'hoa_expired_keys_v1';
+      const tbody = document.getElementById('hoaTbody');
+      const pager = document.getElementById('pager');
+      const pagerInfo = document.getElementById('pagerInfo');
+      const pageNumbers = document.getElementById('pageNumbers');
+      const prevPageBtn = document.getElementById('prevPage');
+      const nextPageBtn = document.getElementById('nextPage');
+    const pageSizeSelect = document.getElementById('pageSizeSelect');
+  const filterFrom = document.getElementById('filterFrom');
+  const filterTo = document.getElementById('filterTo');
+  const filterName = document.getElementById('filterName');
+  const filterSex = document.getElementById('filterSex');
+  const filterDesignation = document.getElementById('filterDesignation');
+  const filterLocation = document.getElementById('filterLocation');
+  const globalSearch = document.getElementById('globalSearch');
+      const applyFilterBtn = document.getElementById('applyFilter');
+      const clearFilterBtn = document.getElementById('clearFilter');
+      const openAddModalBtn = document.getElementById('openAddModal');
+      const modal = document.getElementById('hoaModal');
+      const modalBackdrop = document.getElementById('hoaModalBackdrop');
+      const modalTitle = document.getElementById('modalTitle');
+      const modalSave = document.getElementById('modalSave');
+      const modalCancel = document.getElementById('modalCancel');
+
+      // inputs inside modal
+      const fullNameEl = () => document.getElementById('fullName');
+  const trackingEl = () => document.getElementById('trackingNumber');
+      const sexEl = () => document.getElementById('sex');
+      const designationEl = () => document.getElementById('designation');
+      const locationEl = () => document.getElementById('location');
+      const regEl = () => document.getElementById('dateRegistered');
+      const expEl = () => document.getElementById('expiration');
+
+      let editingIndex = null;
+      let currentPage = 0;
+      let pageSize = parseInt(pageSizeSelect.value,10) || 10;
+  let activeFilter = {from:'', to:'', name:'', sex:'', designation:'', location:'', search:''};
+
+  function normalizeText(s){
+    try{ return (s||'').toString().toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu,'').trim(); }catch(e){ return (s||'').toString().toLowerCase().replace(/[\u0300-\u036f]/g,'').trim(); }
+  }
+
+      function load(){ try{ return JSON.parse(localStorage.getItem(KEY))||[] }catch(e){return[]} }
+      function save(arr){ localStorage.setItem(KEY, JSON.stringify(arr)) }
+      const TRACK_COUNTER_KEY = 'hoa_tracking_counter_v1';
+      function getAssignedTrackingNumbers(){ try{ const arr = load(); return arr.map(r=>String(r.trackingNumber||'')).filter(Boolean); }catch(e){return[]} }
+      function getCounter(){ try{ return parseInt(localStorage.getItem(TRACK_COUNTER_KEY),10)||0 }catch(e){return 0} }
+      function setCounter(n){ try{ localStorage.setItem(TRACK_COUNTER_KEY, String(n)); }catch(e){} }
+      function getNextTrackingNumber(){
+        // sequential 1..1000, wrap to 1 and avoid collisions with existing records
+        const max = 1000;
+        let counter = getCounter();
+        const assigned = new Set(getAssignedTrackingNumbers());
+        for(let i=0;i<max;i++){
+          counter = (counter % max) + 1; // advance
+          const as = String(counter);
+          if(!assigned.has(as)){
+            setCounter(counter);
+            return as;
+          }
+        }
+        // fallback: if all taken, return timestamp-based unique string
+        return String(Date.now());
+      }
+      function loadExpiredKeys(){ try{ return JSON.parse(localStorage.getItem(EXPIRED_KEYS))||[] }catch(e){return[]} }
+      function saveExpiredKeys(arr){ localStorage.setItem(EXPIRED_KEYS, JSON.stringify(arr)) }
+      function escapeHtml(s){ return (s||'').toString().replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"})[c]) }
+      function isExpired(dateStr){ if(!dateStr) return false; const d = new Date(dateStr); d.setHours(0,0,0,0); const today = new Date(); today.setHours(0,0,0,0); return d < today }
+
+      function render(){
+  const arr = load();
+  tbody.innerHTML = '';
+  if(!arr.length){ tbody.innerHTML = '<tr class="empty-row"><td class="empty" colspan="8">No homeowners yet</td></tr>'; pager.style.display='none'; return }
+
+        // prepare map with original indices to keep stable references
+        const mapped = arr.map((r,i)=>({r, i}));
+        // apply combined filters (name, sex, designation, location, registered date)
+        const from = activeFilter.from ? new Date(activeFilter.from) : null;
+        const to = activeFilter.to ? new Date(activeFilter.to) : null;
+  const nameFilter = activeFilter.name ? normalizeText(activeFilter.name) : '';
+  const sexFilter = activeFilter.sex ? normalizeText(activeFilter.sex) : '';
+  const desigFilter = activeFilter.designation ? normalizeText(activeFilter.designation) : '';
+  const locFilter = activeFilter.location ? normalizeText(activeFilter.location) : '';
+  const searchFilter = activeFilter.search ? normalizeText(activeFilter.search) : '';
+
+        const filtered = mapped.filter(item=>{
+          const r = item.r || {};
+          // name
+          if(nameFilter){ const v = normalizeText(r.fullName); if(v.indexOf(nameFilter) === -1) return false }
+          if(sexFilter){ const v = normalizeText(r.sex); if(v !== sexFilter) return false }
+          if(desigFilter){ const v = normalizeText(r.designation); if(v.indexOf(desigFilter) === -1) return false }
+          if(locFilter){ const v = normalizeText(r.location); if(v.indexOf(locFilter) === -1) return false }
+          // date range
+          if(from || to){ const reg = r.registered ? new Date(r.registered) : null; if(!reg) return false; reg.setHours(0,0,0,0); if(from && reg < from) return false; if(to && reg > to) return false }
+          // global search across key fields
+          if(searchFilter){ const hay = [r.trackingNumber, r.fullName, r.sex, r.designation, r.location].map(normalizeText).join(' '); if(hay.indexOf(searchFilter) === -1) return false }
+          return true;
+        });
+
+        // sort ascending by tracking number (try to extract numeric value), fallback to fullName
+        function numericFromTrack(t){ if(!t && t !== 0) return NaN; const s = String(t).trim(); // try full numeric parse first
+          const n = Number(s);
+          if(!isNaN(n)) return n;
+          // fallback: extract leading integer from string, e.g. "TRK-12" -> 12
+          const m = s.match(/(\d+)/);
+          return m ? Number(m[0]) : NaN;
+        }
+        filtered.sort((a,b)=>{
+          const ta = numericFromTrack(a.r && a.r.trackingNumber);
+          const tb = numericFromTrack(b.r && b.r.trackingNumber);
+          if(!isNaN(ta) && !isNaN(tb)) return ta - tb;
+          if(!isNaN(ta)) return -1;
+          if(!isNaN(tb)) return 1;
+          const na = (a.r && a.r.fullName || '').toLowerCase();
+          const nb = (b.r && b.r.fullName || '').toLowerCase();
+          return na < nb ? -1 : (na > nb ? 1 : 0);
+        });
+
+        // pagination
+        pageSize = parseInt(pageSizeSelect.value,10) || 10;
+        const total = filtered.length;
+        const totalPages = Math.max(1, Math.ceil(total / pageSize));
+        if(currentPage >= totalPages) currentPage = totalPages - 1;
+        const start = currentPage * pageSize;
+        const pageRecords = filtered.slice(start, start + pageSize);
+
+        // expired keys persistence to detect newly expired rows
+        const expiredKeys = loadExpiredKeys();
+
+        pageRecords.forEach(({r, i})=>{
+          const tr = document.createElement('tr');
+          if(isExpired(r.expiration)) tr.classList.add('expired');
+
+          // compute stable key for expiration tracking
+          const key = (r.fullName||'') + '|' + (r.registered||'') + '|' + (r.expiration||'');
+          if(isExpired(r.expiration) && expiredKeys.indexOf(key) === -1){ tr.classList.add('new-expired'); expiredKeys.push(key); }
+
+          tr.innerHTML = `
+            <td>${escapeHtml(r.trackingNumber||'')}</td>
+            <td>${escapeHtml(r.fullName)}</td>
+            <td>${escapeHtml(r.sex)}</td>
+            <td>${escapeHtml(r.designation)}</td>
+            <td>${escapeHtml(r.location)}</td>
+            <td>${escapeHtml(r.registered)}</td>
+            <td class="expire-cell">${escapeHtml(r.expiration)}</td>
+            <td style="text-align:center">
+              <button class="action-btn" title="Edit" onclick="hoaEdit(${i})" style="background:#2e86de;color:#fff;margin-right:6px">
+                <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 13.5V16h2.5L16.81 5.69a1 1 0 0 0 0-1.41L15.12 3.6a1 1 0 0 0-1.41 0L4 13.5z" fill="#fff"/></svg>
+                <span style="font-size:13px">Edit</span>
+              </button>
+              <button class="action-btn" title="View" onclick="hoaView(${i})" style="background:#27ae60;color:#fff;margin-right:6px">
+                <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M10 4a8 8 0 100 16 8 8 0 000-16zM9 7h2v5H9V7zm0 7h2v2H9v-2z" fill="#fff"/></svg>
+                <span style="font-size:13px">View</span>
+              </button>
+              <button class="action-btn" title="Delete" onclick="hoaDelete(${i})" style="background:#b71c1c;color:#fff">
+                <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 7h8v9a1 1 0 01-1 1H7a1 1 0 01-1-1V7z" fill="#fff"/><path d="M4 5h12v1H4z" fill="#fff"/></svg>
+                <span style="font-size:13px">Delete</span>
+              </button>
+            </td>
+          `;
+          tbody.appendChild(tr);
+        });
+
+        // save expired keys (so newly-expired animate once)
+        saveExpiredKeys(expiredKeys);
+
+        // update pager UI
+        if(total <= pageSize){ pager.style.display='none'; } else { pager.style.display='flex'; }
+        pagerInfo.textContent = `${total} item${total===1?'':'s'} — page ${currentPage+1} of ${totalPages}`;
+        // render page numbers
+        pageNumbers.innerHTML = '';
+        for(let p=0;p<totalPages;p++){
+          const btn = document.createElement('button'); btn.className='page-btn'; btn.textContent = p+1; if(p===currentPage) btn.style.background='#e6eef6'; btn.addEventListener('click', ()=>{ currentPage=p; render(); });
+          pageNumbers.appendChild(btn);
+        }
+        prevPageBtn.disabled = currentPage === 0;
+        nextPageBtn.disabled = currentPage >= totalPages-1;
+      }
+
+      function openModal(mode, idx){
+        editingIndex = (typeof idx === 'number') ? idx : null;
+        const arr = load();
+        modal.style.display = 'block';
+        modal.setAttribute('aria-hidden','false');
+      if(mode === 'add'){
+        modalTitle.textContent = 'Add Member';
+        // generate a sequential Tracking number (1..1000)
+        trackingEl().value = getNextTrackingNumber();
+        fullNameEl().value=''; sexEl().value=''; designationEl().value=''; locationEl().value=''; regEl().value=''; expEl().value='';
+        } else {
+          modalTitle.textContent = mode === 'edit' ? 'Edit Member' : 'View Member';
+          const r = arr[idx];
+              trackingEl().value = r.trackingNumber || '';
+              fullNameEl().value = r.fullName || '';
+          sexEl().value = r.sex || '';
+          designationEl().value = r.designation || '';
+          locationEl().value = r.location || '';
+          regEl().value = r.registered || '';
+          expEl().value = r.expiration || '';
+          if(mode === 'view'){
+            // make inputs readonly
+            [trackingEl(), fullNameEl(), sexEl(), designationEl(), locationEl(), regEl(), expEl()].forEach(i=>i.setAttribute('disabled',''));
+          } else {
+            [trackingEl(), fullNameEl(), sexEl(), designationEl(), locationEl(), regEl(), expEl()].forEach(i=>i.removeAttribute('disabled'));
+          }
+        }
+        // show/hide save depending on mode
+        modalSave.style.display = (mode === 'view') ? 'none' : 'inline-block';
+      }
+
+  function closeModal(){ modal.style.display='none'; modal.setAttribute('aria-hidden','true'); editingIndex = null; [trackingEl(), fullNameEl(), sexEl(), designationEl(), locationEl(), regEl(), expEl()].forEach(i=>i.removeAttribute('disabled')) }
+
+      openAddModalBtn.addEventListener('click', ()=> openModal('add'));
+      modalBackdrop.addEventListener('click', closeModal);
+      modalCancel.addEventListener('click', closeModal);
+
+  // pager events
+  prevPageBtn.addEventListener('click', ()=>{ if(currentPage>0){ currentPage--; render(); } });
+  nextPageBtn.addEventListener('click', ()=>{ currentPage++; render(); });
+  pageSizeSelect.addEventListener('change', ()=>{ currentPage = 0; render(); });
+
+      // filter events
+      applyFilterBtn.addEventListener('click', ()=>{
+        activeFilter.from = filterFrom.value || '';
+        activeFilter.to = filterTo.value || '';
+        activeFilter.name = filterName && filterName.value ? filterName.value.trim() : '';
+        activeFilter.sex = filterSex && filterSex.value ? filterSex.value : '';
+        activeFilter.designation = filterDesignation && filterDesignation.value ? filterDesignation.value.trim() : '';
+        activeFilter.location = filterLocation && filterLocation.value ? filterLocation.value : '';
+
+        currentPage = 0; render();
+        if(window.hoaLogHistory) window.hoaLogHistory(`Filters applied: from=${activeFilter.from||'any'} to=${activeFilter.to||'any'} location=${activeFilter.location||'any'}`);
+      });
+      clearFilterBtn.addEventListener('click', ()=>{
+        filterFrom.value=''; filterTo.value=''; if(filterName) filterName.value=''; if(filterSex) filterSex.value=''; if(filterDesignation) filterDesignation.value=''; filterLocation.value=''; if(globalSearch) globalSearch.value='';
+        activeFilter={from:'',to:'',name:'',sex:'',designation:'',location:'',search:''}; currentPage=0; render();
+        if(window.hoaLogHistory) window.hoaLogHistory('Filters cleared');
+      });
+
+      // when location is changed, apply filter immediately
+      if(filterLocation){ filterLocation.addEventListener('change', ()=>{
+        activeFilter.location = filterLocation.value || '';
+        currentPage = 0; render();
+      }); }
+
+      // live search with debounce
+      let searchTimer = null;
+      if(globalSearch){ globalSearch.addEventListener('input', ()=>{
+        clearTimeout(searchTimer);
+        searchTimer = setTimeout(()=>{ activeFilter.search = globalSearch.value.trim(); currentPage = 0; render(); }, 220);
+      }); }
+
+      modalSave.addEventListener('click', ()=>{
+          const fullName = fullNameEl().value.trim(); if(!fullName){ alert('Full name required'); fullNameEl().focus(); return }
+    const rec = { trackingNumber: trackingEl().value || getNextTrackingNumber(), fullName: fullName, sex: sexEl().value, designation: designationEl().value.trim(), location: locationEl().value, registered: regEl().value, expiration: expEl().value };
+        const arr = load();
+        if(editingIndex === null){ arr.unshift(rec); if(window.hoaLogHistory) window.hoaLogHistory(`Member added: ${rec.fullName} (${rec.trackingNumber})`); } else { const old = arr[editingIndex]; arr[editingIndex] = rec; if(window.hoaLogHistory) window.hoaLogHistory(`Member edited: ${old.fullName} → ${rec.fullName}`); }
+        save(arr); currentPage = 0; render(); closeModal();
+      });
+
+      window.hoaView = function(i){ openModal('view', i); };
+      window.hoaEdit = function(i){ openModal('edit', i); };
+      window.hoaDelete = function(i){ if(!confirm('Delete homeowner?')) return; const arr = load(); const old = arr[i]; arr.splice(i,1); save(arr); render(); if(window.hoaLogHistory) window.hoaLogHistory(`Member deleted: ${old && old.fullName ? old.fullName : 'unknown'}`); };
+
+      /* HOA Recent History module */
+      (function(){
+        const KEY = 'hoa_recent_history_v1';
+        const MAX = 300; let items = []; const listEl = document.getElementById('hoaHistoryList');
+        function loadHistory(){ try{ items = JSON.parse(localStorage.getItem(KEY))||[] }catch(e){ items=[] } }
+        function saveHistory(){ try{ localStorage.setItem(KEY, JSON.stringify(items.slice(-MAX))); }catch(e){} }
+        function currentUser(){ try{ const s = sessionStorage.getItem('cssu_logged_user'); if(s) return JSON.parse(s); const l = localStorage.getItem('cssu_logged_user'); if(l) return JSON.parse(l); }catch(e){} return null }
+        function renderHistory(){ if(!listEl) return; listEl.innerHTML=''; const from = (document.getElementById('hoaHistoryFrom')||{}).value ? new Date(document.getElementById('hoaHistoryFrom').value).setHours(0,0,0,0) : null; const to = (document.getElementById('hoaHistoryTo')||{}).value ? new Date(document.getElementById('hoaHistoryTo').value).setHours(23,59,59,999) : null; const user = (document.getElementById('hoaHistoryUser')||{}).value || ''; const search = ((document.getElementById('hoaHistorySearch')||{}).value||'').toLowerCase(); items.slice().reverse().forEach(it=>{ if(from && it.ts < from) return; if(to && it.ts > to) return; if(user && it.user !== user) return; if(search && it.msg.toLowerCase().indexOf(search)===-1) return; const li = document.createElement('li'); li.style.fontSize='13px'; li.style.padding='6px'; li.style.borderRadius='6px'; li.style.background='#fff'; li.style.border='1px solid #eef3f6'; li.innerHTML = `<div style="font-size:12px;color:#666;margin-bottom:4px">${new Date(it.ts).toLocaleString()}</div><div><strong style='color:#2f3640'>${escapeHtml(it.user||'')}</strong> • ${escapeHtml(it.msg)}</div>`; listEl.appendChild(li); }); populateUsers(); }
+        function populateUsers(){ const sel = document.getElementById('hoaHistoryUser'); if(!sel) return; const users = Array.from(new Set(items.map(i=>i.user).filter(Boolean))).sort(); sel.innerHTML = '<option value="">All</option>' + users.map(u=>`<option value="${escapeHtml(u)}">${escapeHtml(u)}</option>`).join(''); }
+        window.hoaLogHistory = function(msg){ try{ const u = currentUser(); const userName = u ? (u.name||u.username||'') : ''; items.push({ts:Date.now(), user:userName, msg:String(msg)}); if(items.length>MAX) items = items.slice(items.length-MAX); saveHistory(); renderHistory(); }catch(e){ console.warn(e) } };
+        function exportCSV(){ const rows = items.filter(it=>{ const from = (document.getElementById('hoaHistoryFrom')||{}).value ? new Date(document.getElementById('hoaHistoryFrom').value).setHours(0,0,0,0) : null; const to = (document.getElementById('hoaHistoryTo')||{}).value ? new Date(document.getElementById('hoaHistoryTo').value).setHours(23,59,59,999) : null; const user = (document.getElementById('hoaHistoryUser')||{}).value || ''; const search = ((document.getElementById('hoaHistorySearch')||{}).value||'').toLowerCase(); if(from && it.ts < from) return false; if(to && it.ts > to) return false; if(user && it.user !== user) return false; if(search && it.msg.toLowerCase().indexOf(search)===-1) return false; return true }); const cols = ['timestamp','user','message']; const csv = [cols.join(',')].concat(rows.map(r => cols.map(c => '"'+ (c==='timestamp'? new Date(r.ts).toLocaleString() : (r[c]||'')).replace(/"/g,'""') + '"').join(','))).join('\n'); const blob = new Blob([csv],{type:'text/csv'}); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href=url; a.download='hoa_history.csv'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url); }
+        function exportPDF(){ const rows = items.slice().filter(()=>true); const rowsHtml = rows.map(r=>`<tr><td style="padding:6px;border:1px solid #ddd">${new Date(r.ts).toLocaleString()}</td><td style="padding:6px;border:1px solid #ddd">${escapeHtml(r.user||'')}</td><td style="padding:6px;border:1px solid #ddd">${escapeHtml(r.msg)}</td></tr>`).join(''); const win = window.open('','_blank'); const html = `<html><head><title>HOA History</title><style>body{font-family:Arial,Helvetica,sans-serif;padding:20px}table{width:100%;border-collapse:collapse}th,td{padding:8px;border:1px solid #ddd}</style></head><body><h2>HOA Recent History</h2><table><thead><tr><th>Timestamp</th><th>User</th><th>Message</th></tr></thead><tbody>${rowsHtml}</tbody></table></body></html>`; win.document.write(html); win.document.close(); win.focus(); setTimeout(()=>win.print(),300); }
+        document.getElementById('hoaHistoryFrom').addEventListener('change', renderHistory);
+        document.getElementById('hoaHistoryTo').addEventListener('change', renderHistory);
+        document.getElementById('hoaHistoryUser').addEventListener('change', renderHistory);
+        document.getElementById('hoaHistorySearch').addEventListener('input', renderHistory);
+        document.getElementById('hoaExportCsv').addEventListener('click', exportCSV);
+        document.getElementById('hoaExportPdf').addEventListener('click', exportPDF);
+        loadHistory(); renderHistory();
+      })();
+
+        // Export HOA table (filtered) as CSV or printable PDF
+        (function(){
+          function getAllRecords(){ try{ return JSON.parse(localStorage.getItem(KEY))||[] }catch(e){ return [] } }
+          function detectMatch(rec, filter){ const nf = (s)=> (s||'').toString().toLowerCase(); try{ if(filter.from || filter.to){ const from = filter.from ? new Date(filter.from).setHours(0,0,0,0) : null; const to = filter.to ? new Date(filter.to).setHours(23,59,59,999) : null; const reg = rec.registered ? new Date(rec.registered).setHours(0,0,0,0) : null; if(from && (!reg || reg < from)) return false; if(to && (!reg || reg > to)) return false; } if(filter.location && filter.location !== ''){ if(nf(rec.location).indexOf(nf(filter.location)) === -1) return false } if(filter.name && filter.name !== ''){ if(nf(rec.fullName).indexOf(nf(filter.name)) === -1) return false } if(filter.sex && filter.sex !== ''){ if(nf(rec.sex) !== nf(filter.sex)) return false } if(filter.designation && filter.designation !== ''){ if(nf(rec.designation).indexOf(nf(filter.designation)) === -1) return false } if(filter.search && filter.search !== ''){ const hay = [rec.trackingNumber, rec.fullName, rec.sex, rec.designation, rec.location].map(nf).join(' '); if(hay.indexOf(nf(filter.search)) === -1) return false } return true }catch(e){ return true } }
+
+          function buildFilter(){ return { from: (document.getElementById('filterFrom')||{}).value || '', to: (document.getElementById('filterTo')||{}).value || '', name: '', sex: '', designation: '', location: (document.getElementById('filterLocation')||{}).value || '', search: (document.getElementById('globalSearch')||{}).value.trim() || '' }; }
+
+          function exportHoACSV(){
+            const all = getAllRecords(); const filter = buildFilter(); const rows = all.filter(r=> detectMatch(r, filter)); if(rows.length===0){ alert('No records to export'); return }
+            const cols = ['trackingNumber','fullName','sex','designation','location','registered','expiration'];
+            const csv = [cols.join(',')].concat(rows.map(r=> cols.map(c=> '"'+((r[c]||'').toString().replace(/"/g,'""'))+'"').join(','))).join('\n');
+            const blob = new Blob([csv],{type:'text/csv'}); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'hoa_export.csv'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+          }
+
+          function exportHoAPDF(){
+            const all = getAllRecords(); const filter = buildFilter(); const rows = all.filter(r=> detectMatch(r, filter)); if(rows.length===0){ alert('No records to export'); return }
+            const rowsHtml = rows.map(r=>`<tr><td style="padding:6px;border:1px solid #ddd">${escapeHtml(r.trackingNumber||'')}</td><td style="padding:6px;border:1px solid #ddd">${escapeHtml(r.fullName||'')}</td><td style="padding:6px;border:1px solid #ddd">${escapeHtml(r.sex||'')}</td><td style="padding:6px;border:1px solid #ddd">${escapeHtml(r.designation||'')}</td><td style="padding:6px;border:1px solid #ddd">${escapeHtml(r.location||'')}</td><td style="padding:6px;border:1px solid #ddd">${escapeHtml(r.registered||'')}</td><td style="padding:6px;border:1px solid #ddd">${escapeHtml(r.expiration||'')}</td></tr>`).join('');
+            const win = window.open('','_blank'); const html = `<html><head><title>HOA Export</title><style>body{font-family:Arial,Helvetica,sans-serif;padding:20px}table{width:100%;border-collapse:collapse}th,td{padding:8px;border:1px solid #ddd;font-size:13px}</style></head><body><h2>HOA Export</h2><table><thead><tr><th>Tracker</th><th>Full Name</th><th>Sex</th><th>Designation</th><th>Location</th><th>Registered</th><th>Expiration</th></tr></thead><tbody>${rowsHtml}</tbody></table></body></html>`; win.document.write(html); win.document.close(); win.focus(); setTimeout(()=>win.print(),300);
+          }
+
+          const csvBtn = document.getElementById('exportHoacsv'); const pdfBtn = document.getElementById('exportHoapdf'); if(csvBtn) csvBtn.addEventListener('click', exportHoACSV); if(pdfBtn) pdfBtn.addEventListener('click', exportHoAPDF);
+        })();
+
+      // initial render
+      render();
+    })();
+  </script>
+</body>
+</html>

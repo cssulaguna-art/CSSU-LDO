@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <script>
+    // If a session or persistent user exists, go straight to dashboard
+    try{
+      const s = sessionStorage.getItem('cssu_logged_user');
+      const l = localStorage.getItem('cssu_logged_user');
+      if(s || l){ window.location.replace('index.html'); }
+    }catch(e){}
+  </script>
+  <title>Login — CSSU Dashboard</title>
+  <style>
+    :root{--bg:#f5f6fa;--card:#fff;--accent:#40739e;--accent-2:#2ecc71;--muted:#6b7280}
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Inter, Poppins, Arial, sans-serif;background:linear-gradient(180deg,#f7fafc,#eef6ff);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+    .wrap{width:100%;max-width:960px;display:grid;grid-template-columns:1fr 420px;gap:28px;align-items:center}
+    .brand{padding:28px;border-radius:12px;background:var(--card);box-shadow:0 8px 30px rgba(16,24,40,0.06)}
+    .brand h1{color:var(--accent);margin:0 0 8px;font-size:24px}
+    .brand p{color:var(--muted);line-height:1.5}
+    .card{padding:20px;border-radius:12px;background:var(--card);box-shadow:0 8px 30px rgba(16,24,40,0.06)}
+    form .field{display:flex;flex-direction:column;margin-bottom:12px}
+    label{font-size:13px;color:#374151;margin-bottom:6px}
+    input[type=text],input[type=password]{padding:10px 12px;border-radius:8px;border:1px solid #e6e9ee;font-size:14px}
+    .actions{display:flex;gap:8px;align-items:center;margin-top:10px}
+    .btn{background:var(--accent);color:#fff;border:0;padding:10px 14px;border-radius:8px;cursor:pointer}
+    .btn.ghost{background:#eef2f6;color:var(--accent)}
+    .hint{font-size:13px;color:var(--muted);margin-top:10px}
+    .error{color:#b91c1c;background:#fff1f2;padding:8px;border-radius:8px;margin-bottom:8px;border:1px solid #fecaca}
+    .success{color:#064e3b;background:#ecfdf5;padding:8px;border-radius:8px;margin-bottom:8px;border:1px solid #bbf7d0}
+    .small{font-size:13px;color:#475569}
+    .users-list{margin-top:12px;padding:10px;background:#fbfdff;border-radius:8px;border:1px solid #eef3f6}
+    .users-list h4{margin:0 0 8px;font-size:14px;color:#0f172a}
+    .users-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:6px}
+    .user-item{font-size:13px;padding:8px;border-radius:6px;background:#fffefc;border:1px solid #f3f4f6}
+
+    @media(max-width:900px){ .wrap{grid-template-columns:1fr;max-width:520px} }
+    /* Additional polished styles and logo */
+    .brand-header{display:flex;gap:14px;align-items:center}
+    .brand-logo{width:56px;height:56px;flex:0 0 56px;border-radius:12px;background:linear-gradient(135deg,#4f46e5,#06b6d4);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;box-shadow:0 8px 30px rgba(16,24,40,0.06)}
+    .brand h1{font-size:22px;margin:0;color:#1f2937}
+    .users-list{margin-top:18px}
+    #demoUsers{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+    .user-item{display:inline-flex;align-items:center;justify-content:flex-start;gap:8px;padding:10px 12px;border-radius:8px;background:#fff;border:1px solid #f1f5f9;cursor:pointer;font-size:14px}
+    .user-item:hover{background:#f8fafc}
+    .card[role="region"]{padding:26px;border-radius:12px}
+    .card[role="region"] h2{margin-bottom:12px}
+    .card[role="region"] .actions .btn{padding:10px 16px;border-radius:8px}
+    input[type=text],input[type=password]{width:100%;padding:12px 14px;border-radius:10px;border:1px solid #e6eef6;background:#fff}
+    .hint{margin-top:14px;color:#6b7280}
+    /* New layout styles */
+    .login-card{display:flex;gap:28px;max-width:980px;width:100%;align-items:stretch}
+    .card-left{flex:1;background:#fff;padding:28px;border-radius:12px;box-shadow:0 10px 30px rgba(16,24,40,0.06)}
+    .card-right{width:420px;flex:0 0 420px;background:linear-gradient(180deg,#ffffff,#fbfdff);padding:28px;border-radius:12px;box-shadow:0 10px 30px rgba(16,24,40,0.06)}
+    .logo-wrap{display:flex;gap:14px;align-items:center;margin-bottom:18px}
+    .logo-mark{width:56px;height:56px;border-radius:10px;display:flex;align-items:center;justify-content:center}
+    .brand-text h1{margin:0;font-size:20px;color:#0f172a}
+    .brand-text .muted{margin:6px 0 0;color:#6b7280}
+    .demo-prompt{margin:10px 0;color:#374151;font-weight:600}
+    .demo-list{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+  .demo-list .user-item{padding:10px 12px;border-radius:8px;background:#f8fafc;border:1px solid #eef6fb;cursor:pointer;display:flex;align-items:center;gap:12px;white-space:nowrap}
+  /* make username a fixed column so passwords align vertically */
+  .demo-list .user-item .demo-username{font-weight:700;color:#0f172a;flex:0 0 140px}
+  .demo-list .user-item .demo-pass{color:#6b7280;flex:1 1 auto;text-align:left}
+    .card-note{margin-top:12px;color:#64748b;font-size:13px}
+    .form-shell h2{margin:0 0 12px}
+  .form-shell label{display:block;margin-top:12px;margin-bottom:6px;color:#374151}
+  /* only apply the full-width input styles to text/password inputs */
+  .form-shell input[type="text"], .form-shell input[type="password"]{display:block;width:100%;padding:12px;border-radius:8px;border:1px solid #e6eef6;background:#fff}
+  /* ensure checkboxes remain inline and vertically centered with the label */
+  .form-shell input[type="checkbox"]{display:inline-block;width:auto;height:auto;margin:0 8px 0 0;vertical-align:middle}
+    .form-row{display:flex;justify-content:space-between;align-items:center;margin-top:12px}
+    .actions{display:flex;gap:10px;margin-top:16px}
+    .btn.primary{background:#2563EB;color:#fff;border-radius:8px;padding:10px 14px;border:0}
+    .btn.ghost{background:#eef2f6;color:#2563EB;border-radius:8px;padding:10px 12px}
+    .forgot{color:#2563EB;text-decoration:none}
+
+    @media(max-width:900px){
+      .login-card{flex-direction:column}
+      .card-right{width:100%;flex:1}
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="login-card">
+      <div class="card-left">
+        <div class="logo-wrap">
+          <div class="logo-mark" aria-hidden="true">
+            <img src="nha.png" alt="logo" height="55" width="55">
+          </div>
+          <div class="brand-text">
+            <h1>CSSU NHA - LAGUNA DISTRICT OFFICE</h1>
+            <p class="muted">Manage homeowners, files, tasks and announcements</p>
+          </div>
+        </div>
+
+        <div class="demo-prompt">Pick    account to autofill</div>
+        <div id="demoUsers" class="demo-list"> <!-- populated by JS --> </div>
+        <div class="card-note">This is a local demo. No server required. Sessions are stored in your browser.</div>
+      </div>
+
+      <div class="card-right">
+        <div class="form-shell">
+          <h2>Sign in</h2>
+          <div id="message" aria-live="polite"></div>
+          <form id="loginForm" onsubmit="return false;">
+            <label for="username">Username</label>
+            <input id="username" type="text" autocomplete="username" placeholder="Enter username" />
+
+            <label for="password">Password</label>
+            <input id="password" type="password" autocomplete="current-password" placeholder="Enter password" />
+
+            <div class="form-row">
+              <label class="small"><input id="remember" type="checkbox" /> Remember me</label>
+            </div>
+
+            <div class="actions">
+              <button id="loginBtn" class="btn primary">Sign in</button>
+              <button id="clearBtn" type="button" class="btn ghost">Clear</button>
+            </div>
+            <div class="hint">Tip: click account on the left to autofill the form.</div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function(){
+      // seven demo users — replace with real auth in production
+      const USERS = [
+        { username: 'Jane', password: 'jane123', name: 'Mary Jane Clanes' },
+        { username: 'Patty', password: 'colortaffy123', name: 'Patricious' },
+        { username: 'Sen', password: 'letmein', name: 'Sen Nika' },
+        { username: 'Jayvee', password: 'secure22', name: 'Jayvee Eniego' },
+        { username: 'Denver', password: 'denver2025', name: 'Denver Pascual' },
+        { username: 'Bosslyndon', password: 'lyndon', name: 'Boss Lyndon' },
+        { username: 'Hannah', password: 'hannahmae', name: 'Hannah Mae Piñon' },
+        { username: 'Shan', password: 'shanqt', name: 'Cute' }
+      ];
+
+      // populate demo list in UI (click to autofill form)
+      const demoRoot = document.getElementById('demoUsers');
+      USERS.forEach(u=>{
+        const el = document.createElement('div');
+  el.className='user-item';
+  el.title = `Sign in as ${u.name} (${u.username})`;
+  // show username left, password right on the same line
+  el.innerHTML = `<span class="demo-username">${u.username}</span><span class="demo-pass">: ${u.password}</span>`;
+        el.addEventListener('click', ()=>{
+          const usernameEl = document.getElementById('username');
+          const passwordEl = document.getElementById('password');
+          if(usernameEl) usernameEl.value = u.username;
+          if(passwordEl) passwordEl.value = u.password;
+          // focus password to allow quick Enter
+          if(passwordEl) passwordEl.focus();
+        });
+        demoRoot.appendChild(el);
+      });
+
+  const form = document.getElementById('loginForm');
+  const username = document.getElementById('username');
+  const password = document.getElementById('password');
+  // fallback in case the checkbox element is missing
+  const remember = document.getElementById('remember') || { checked: false };
+      const message = document.getElementById('message');
+      const loginBtn = document.getElementById('loginBtn');
+      const clearBtn = document.getElementById('clearBtn');
+
+      function showMessage(text, type){ message.innerHTML = `<div class="${type=== 'error' ? 'error':'success'}" role="status">${text}</div>`; }
+      function clearMessage(){ message.innerHTML = ''; }
+
+      function setSession(userObj, persist){
+        try{
+          if(persist){ localStorage.setItem('cssu_logged_user', JSON.stringify(userObj)); }
+          else { sessionStorage.setItem('cssu_logged_user', JSON.stringify(userObj)); }
+        }catch(e){ console.warn('storage failed', e); }
+      }
+
+      function findUser(u,p){ return USERS.find(x=> x.username === u && x.password === p); }
+
+      loginBtn.addEventListener('click', ()=>{
+        clearMessage();
+        const u = (username.value||'').trim();
+        const p = (password.value||'').trim();
+        if(!u || !p){ showMessage('Please enter username and password', 'error'); return }
+        const user = findUser(u,p);
+        if(!user){ showMessage('Invalid credentials', 'error'); return }
+        setSession({ username: user.username, name: user.name }, remember.checked);
+        showMessage(`Signed in as ${user.name} (${user.username})`, 'success');
+        // small delay then navigate to index (simulate login)
+        setTimeout(()=>{ window.location.href = 'index.html'; }, 900);
+      });
+
+      clearBtn.addEventListener('click', ()=>{ username.value=''; password.value=''; remember.checked=false; clearMessage(); username.focus(); });
+
+      // prefill if "remembered"
+      try{
+        const saved = JSON.parse(localStorage.getItem('cssu_logged_user') || 'null');
+        if(saved && saved.username){ username.value = saved.username; remember.checked = true; }
+      }catch(e){}
+
+      // allow Enter to submit
+      form.addEventListener('keydown', (e)=>{ if(e.key === 'Enter') { e.preventDefault(); loginBtn.click(); } });
+
+      // small accessibility focus
+      username.focus();
+    })();
+  </script>
+  <!-- Signed-out toast -->
+  <div id="signedOutToast" style="position:fixed;left:50%;transform:translateX(-50%);bottom:28px;display:none;z-index:3000">
+  <div style="background:#ef4444;border:1px solid #ef4444;padding:12px 16px;border-radius:10px;box-shadow:0 8px 30px rgba(16,24,40,0.08);color:#fff">You have successfully logged out of your account.</div>
+  </div>
+  <script>
+    (function(){
+      try{
+        const params = new URLSearchParams(window.location.search);
+        if(params.get('signedout') === '1'){
+          const t = document.getElementById('signedOutToast');
+          if(t){ t.style.display='block'; }
+          // auto-dismiss after 2.5s then remove param from URL
+          setTimeout(()=>{ if(t) t.style.display='none'; params.delete('signedout'); const url = location.pathname + (params.toString() ? '?'+params.toString() : ''); history.replaceState({}, '', url); }, 2500);
+        }
+      }catch(e){}
+    })();
+  </script>
+</body>
+</html>
