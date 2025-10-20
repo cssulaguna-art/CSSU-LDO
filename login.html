@@ -3,6 +3,14 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <script>
+    // If a session or persistent user exists, go straight to dashboard
+    try{
+      const s = sessionStorage.getItem('cssu_logged_user');
+      const l = localStorage.getItem('cssu_logged_user');
+      if(s || l){ window.location.replace('index.html'); }
+    }catch(e){}
+  </script>
   <title>Login — CSSU Dashboard</title>
   <style>
     :root{--bg:#f5f6fa;--card:#fff;--accent:#40739e;--accent-2:#2ecc71;--muted:#6b7280}
