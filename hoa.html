@@ -86,6 +86,8 @@
           <input id="filterTo" type="date" />
           <button id="applyFilter" class="btn btn-success">Apply</button>
           <button id="clearFilter" class="btn" style="background:#7f8c8d">Clear</button>
+          <button id="exportHoacsv" class="btn" style="background:#2ecc71">Export CSV</button>
+          <button id="exportHoapdf" class="btn" style="background:#e74c3c">Export PDF</button>
         </div>
         <div style="display:flex;gap:8px;align-items:center">
           <label style="font-size:13px;color:#555">Per page</label>
@@ -464,6 +466,29 @@
         document.getElementById('hoaExportPdf').addEventListener('click', exportPDF);
         loadHistory(); renderHistory();
       })();
+
+        // Export HOA table (filtered) as CSV or printable PDF
+        (function(){
+          function getAllRecords(){ try{ return JSON.parse(localStorage.getItem(KEY))||[] }catch(e){ return [] } }
+          function detectMatch(rec, filter){ const nf = (s)=> (s||'').toString().toLowerCase(); try{ if(filter.from || filter.to){ const from = filter.from ? new Date(filter.from).setHours(0,0,0,0) : null; const to = filter.to ? new Date(filter.to).setHours(23,59,59,999) : null; const reg = rec.registered ? new Date(rec.registered).setHours(0,0,0,0) : null; if(from && (!reg || reg < from)) return false; if(to && (!reg || reg > to)) return false; } if(filter.location && filter.location !== ''){ if(nf(rec.location).indexOf(nf(filter.location)) === -1) return false } if(filter.name && filter.name !== ''){ if(nf(rec.fullName).indexOf(nf(filter.name)) === -1) return false } if(filter.sex && filter.sex !== ''){ if(nf(rec.sex) !== nf(filter.sex)) return false } if(filter.designation && filter.designation !== ''){ if(nf(rec.designation).indexOf(nf(filter.designation)) === -1) return false } if(filter.search && filter.search !== ''){ const hay = [rec.trackingNumber, rec.fullName, rec.sex, rec.designation, rec.location].map(nf).join(' '); if(hay.indexOf(nf(filter.search)) === -1) return false } return true }catch(e){ return true } }
+
+          function buildFilter(){ return { from: (document.getElementById('filterFrom')||{}).value || '', to: (document.getElementById('filterTo')||{}).value || '', name: '', sex: '', designation: '', location: (document.getElementById('filterLocation')||{}).value || '', search: (document.getElementById('globalSearch')||{}).value.trim() || '' }; }
+
+          function exportHoACSV(){
+            const all = getAllRecords(); const filter = buildFilter(); const rows = all.filter(r=> detectMatch(r, filter)); if(rows.length===0){ alert('No records to export'); return }
+            const cols = ['trackingNumber','fullName','sex','designation','location','registered','expiration'];
+            const csv = [cols.join(',')].concat(rows.map(r=> cols.map(c=> '"'+((r[c]||'').toString().replace(/"/g,'""'))+'"').join(','))).join('\n');
+            const blob = new Blob([csv],{type:'text/csv'}); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'hoa_export.csv'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+          }
+
+          function exportHoAPDF(){
+            const all = getAllRecords(); const filter = buildFilter(); const rows = all.filter(r=> detectMatch(r, filter)); if(rows.length===0){ alert('No records to export'); return }
+            const rowsHtml = rows.map(r=>`<tr><td style="padding:6px;border:1px solid #ddd">${escapeHtml(r.trackingNumber||'')}</td><td style="padding:6px;border:1px solid #ddd">${escapeHtml(r.fullName||'')}</td><td style="padding:6px;border:1px solid #ddd">${escapeHtml(r.sex||'')}</td><td style="padding:6px;border:1px solid #ddd">${escapeHtml(r.designation||'')}</td><td style="padding:6px;border:1px solid #ddd">${escapeHtml(r.location||'')}</td><td style="padding:6px;border:1px solid #ddd">${escapeHtml(r.registered||'')}</td><td style="padding:6px;border:1px solid #ddd">${escapeHtml(r.expiration||'')}</td></tr>`).join('');
+            const win = window.open('','_blank'); const html = `<html><head><title>HOA Export</title><style>body{font-family:Arial,Helvetica,sans-serif;padding:20px}table{width:100%;border-collapse:collapse}th,td{padding:8px;border:1px solid #ddd;font-size:13px}</style></head><body><h2>HOA Export</h2><table><thead><tr><th>Tracker</th><th>Full Name</th><th>Sex</th><th>Designation</th><th>Location</th><th>Registered</th><th>Expiration</th></tr></thead><tbody>${rowsHtml}</tbody></table></body></html>`; win.document.write(html); win.document.close(); win.focus(); setTimeout(()=>win.print(),300);
+          }
+
+          const csvBtn = document.getElementById('exportHoacsv'); const pdfBtn = document.getElementById('exportHoapdf'); if(csvBtn) csvBtn.addEventListener('click', exportHoACSV); if(pdfBtn) pdfBtn.addEventListener('click', exportHoAPDF);
+        })();
 
       // initial render
       render();
